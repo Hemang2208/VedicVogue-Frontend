@@ -25,7 +25,7 @@ import { Navigation } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import IApplication from "@/shared/data";
+import IApplication from "@/shared/application";
 import { collectClientData, UserData } from "@/utils/collectData";
 import {
   // decrypt,
@@ -371,7 +371,7 @@ export default function ApplyPage() {
       const clientDataResult = await collectClientData();
       const applicationData = convertToIApplication(formData, clientDataResult);
 
-      const encryptedData = encrypt(JSON.stringify(applicationData));
+      const encryptedData: string = encrypt(JSON.stringify(applicationData));
 
       const URL = process.env.NEXT_PUBLIC_API_URL;
       const response = await fetch(`${URL}/api/applications/create`, {

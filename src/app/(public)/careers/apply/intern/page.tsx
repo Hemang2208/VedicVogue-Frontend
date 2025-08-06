@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Navigation } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { motion } from "framer-motion";
@@ -28,6 +30,10 @@ import {
   Globe,
   Send,
 } from "lucide-react";
+import IInternApplication from "@/shared/intern";
+import { collectClientData, UserData } from "@/utils/collectData";
+import { encrypt } from "@/utils/crypto";
+import toast from "react-hot-toast";
 
 // 1. Zod schema: all fields are strings (including URLs)
 const formSchema = z.object({
@@ -86,9 +92,15 @@ const formSchema = z.object({
     .trim()
     .min(10, { message: "Message must be more than 10 characters." })
     .max(1000, { message: "Message must be under 1000 characters." }),
+
+  privacyConsent: z.boolean().refine((val) => val === true, {
+    message: "You must agree to the privacy policy",
+  }),
 });
 
 export default function ApplyPage() {
+  const [loading, setLoading] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -101,12 +113,173 @@ export default function ApplyPage() {
       resumeLink: "",
       portfolioLink: "",
       message: "",
+      privacyConsent: false,
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    // Send API request here - values are all strings
+  const convertToIInternApplication = (
+    data: z.infer<typeof formSchema>,
+    clientData: UserData
+  ): IInternApplication => {
+    return {
+      fullName: data.fullName,
+      college: data.college,
+      contactInfo: {
+        email: data.email,
+        phone: data.phone,
+      },
+      information: {
+        experience: data.experience || undefined,
+        message: data.message,
+      },
+      links: {
+        linkedin: data.linkedin,
+        resumeLink: data.resumeLink,
+        portfolioLink: data.portfolioLink || undefined,
+      },
+      additionalInfo: {
+        ip: clientData.ip,
+        geo: {
+          country: clientData.geo.country,
+          region: clientData.geo.region,
+          city: clientData.geo.city,
+          timezone: clientData.geo.timezone,
+          isp: clientData.geo.isp,
+          org: clientData.geo.org,
+          location: {
+            latitude: clientData.geo.latitude ?? undefined,
+            longitude: clientData.geo.longitude ?? undefined,
+          },
+        },
+        device: {
+          type: clientData.browser.deviceType,
+          brand: clientData.device.platform,
+          model: `${clientData.device.screen.width}x${clientData.device.screen.height}`,
+          browser: `${clientData.browser.name} ${clientData.browser.version}`,
+          os: `${clientData.browser.os} ${clientData.browser.osVersion}`,
+          memory: clientData.device.deviceMemory,
+          cores: clientData.device.hardwareConcurrency,
+          connection: clientData.device.connection
+            ? {
+                type: clientData.device.connection.effectiveType,
+                speed: clientData.device.connection.downlink,
+                latency: clientData.device.connection.rtt,
+                dataSaver: clientData.device.connection.saveData,
+              }
+            : undefined,
+          battery: clientData.device.battery
+            ? {
+                charging: clientData.device.battery.charging,
+                level: clientData.device.battery.level,
+                chargingTime: clientData.device.battery.chargingTime,
+                dischargingTime: clientData.device.battery.dischargingTime,
+              }
+            : undefined,
+          permissions: clientData.device.permissions,
+          screen: {
+            width: clientData.device.screen.width,
+            height: clientData.device.screen.height,
+            colorDepth: clientData.device.screen.colorDepth,
+            pixelDepth: clientData.device.screen.pixelDepth,
+            availWidth: clientData.device.screen.availWidth,
+            availHeight: clientData.device.screen.availHeight,
+          },
+          viewport: {
+            width: clientData.device.viewport.width,
+            height: clientData.device.viewport.height,
+          },
+        },
+        browser: {
+          name: clientData.browser.name,
+          version: clientData.browser.version,
+          engine: clientData.browser.engine,
+          engineVersion: clientData.browser.engineVersion,
+          vendor: clientData.browser.vendor,
+          mobile: clientData.browser.mobile,
+          tablet: clientData.browser.tablet,
+          desktop: clientData.browser.desktop,
+        },
+        security: {
+          doNotTrack: clientData.security.doNotTrack,
+          secureContext: clientData.security.secureContext,
+          cookieEnabled: clientData.security.cookieEnabled,
+          javaEnabled: clientData.security.javaEnabled,
+          onLine: clientData.security.onLine,
+          webdriver: clientData.security.webdriver,
+          plugins: clientData.security.plugins,
+          mimeTypes: clientData.security.mimeTypes,
+        },
+        session: {
+          timestamp: clientData.session.timestamp,
+          sessionId: clientData.session.sessionId,
+          referrer: clientData.session.referrer,
+          currentUrl: clientData.session.currentUrl,
+          timeZone: clientData.session.timeZone,
+          timeZoneOffset: clientData.session.timeZoneOffset,
+          language: clientData.session.language,
+          languages: clientData.session.languages,
+          visitDuration: clientData.session.visitDuration,
+          pageLoadTime: clientData.session.pageLoadTime,
+        },
+        headers: {
+          userAgent: clientData.headers.userAgent,
+          accept: clientData.headers.accept,
+          acceptLanguage: clientData.headers.acceptLanguage,
+          acceptEncoding: clientData.headers.acceptEncoding,
+          secChUa: clientData.headers.secChUa,
+          secChUaPlatform: clientData.headers.secChUaPlatform,
+          secChUaMobile: clientData.headers.secChUaMobile,
+          secFetchSite: clientData.headers.secFetchSite,
+          secFetchMode: clientData.headers.secFetchMode,
+          secFetchDest: clientData.headers.secFetchDest,
+        },
+        timestamp: new Date().toISOString(),
+      },
+      privacyConsent: data.privacyConsent,
+    };
+  };
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setLoading(true);
+    console.log("Form submitted with values:", values);
+    try {
+      const clientDataResult = await collectClientData();
+      const internApplicationData = convertToIInternApplication(
+        values,
+        clientDataResult
+      );
+
+      const encryptedData = encrypt(JSON.stringify(internApplicationData));
+
+      const URL = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${URL}/api/interns/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ data: encryptedData }),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        console.error("Server Error Response:", responseData);
+        toast.error(responseData.message || "Failed to submit application");
+        return;
+      }
+
+      toast.success(
+        responseData.message || "Internship Application Submitted Successfully!"
+      );
+
+      // Reset form after successful submission
+      form.reset();
+    } catch (error) {
+      toast.error("Failed to submit application. Please try again.");
+      console.error("Error submitting internship application:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -308,24 +481,54 @@ export default function ApplyPage() {
                   )}
                 />
 
+                {/* Privacy Consent */}
+                <FormField
+                  control={form.control}
+                  name="privacyConsent"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          I agree to the{" "}
+                          <Link
+                            href="/privacy"
+                            className="text-primary hover:underline"
+                          >
+                            Privacy Policy
+                          </Link>{" "}
+                          and{" "}
+                          <Link
+                            href="/terms"
+                            className="text-primary hover:underline"
+                          >
+                            Terms of Service
+                          </Link>
+                        </FormLabel>
+                        <FormMessage />
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
                 {/* Submit */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4">
                   <p className="text-sm text-muted-foreground">
-                    By submitting, you agree to our{" "}
-                    <Link
-                      href="/privacy"
-                      className="text-primary hover:underline"
-                    >
-                      Privacy Policy
-                    </Link>
-                    .
+                    We&apos;ll review your application and get back to you
+                    within 5-7 business days.
                   </p>
                   <VVButton
                     type="submit"
-                    className="bg-primary hover:bg-primary/90"
+                    disabled={loading}
+                    className="bg-primary hover:bg-primary/90 cursor-pointer"
                   >
                     <Send className="h-4 w-4 mr-2" />
-                    Submit Application
+                    {loading ? "Submitting..." : "Submit Application"}
                   </VVButton>
                 </div>
               </form>
