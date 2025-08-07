@@ -37,6 +37,18 @@ import {
   CheckCircle,
   Calendar,
 } from "lucide-react";
+import { encrypt } from "@/utils/crypto";
+import toast from "react-hot-toast";
+
+interface ContactFormData {
+  name: string;
+  email: string;
+  phone: string;
+  issueType: string;
+  subject: string;
+  message: string;
+  priority: string;
+}
 
 const supportChannels = [
   {
@@ -56,7 +68,7 @@ const supportChannels = [
     availability: "9 AM - 9 PM",
     responseTime: "Immediate",
     status: "available",
-    contact: "+91 98765 43210",
+    // contact: "+91 98765 43210",
   },
   {
     id: "email",
@@ -92,31 +104,89 @@ const issueTypes = [
 
 export default function SupportPage() {
   const [selectedChannel, setSelectedChannel] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ContactFormData>({
     name: "",
     email: "",
     phone: "",
     issueType: "",
     subject: "",
     message: "",
-    priority: "medium",
+    priority: "low",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (submitError) {
+      setSubmitError(null);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate form submission
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const contactData = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        issueType: formData.issueType,
+        subject: formData.subject,
+        message: formData.message,
+        priority: formData.priority,
+      };
+
+      const encryptedData = encrypt(JSON.stringify(contactData));
+
+      const URL = process.env.NEXT_PUBLIC_API_URL;
+
+      const response = await fetch(`${URL}/api/contacts/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ data: encryptedData }),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        console.error("Server Error Response:", responseData);
+        throw new Error(
+          responseData.message || "Failed to submit contact request"
+        );
+      }
+
+      toast.success(
+        responseData.message || "Application Submitted Successfully!"
+      );
+
+      setSubmitError(null);
       setIsSubmitted(true);
-    }, 2000);
+    } catch (error) {
+      console.error("Error submitting contact:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to submit contact request. Please try again.";
+      toast.error(errorMessage);
+      setSubmitError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+      // Reset form data
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        issueType: "",
+        subject: "",
+        message: "",
+        priority: "low",
+      });
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -156,7 +226,19 @@ export default function SupportPage() {
                 <VVButton
                   variant="outline"
                   className="w-full"
-                  onClick={() => setIsSubmitted(false)}
+                  onClick={() => {
+                    setIsSubmitted(false);
+                    // Reset form data
+                    setFormData({
+                      name: "",
+                      email: "",
+                      phone: "",
+                      issueType: "",
+                      subject: "",
+                      message: "",
+                      priority: "low",
+                    });
+                  }}
                 >
                   Submit Another Request
                 </VVButton>
@@ -260,9 +342,14 @@ export default function SupportPage() {
                 </VVCardHeader>
                 <VVCardContent>
                   <form onSubmit={handleSubmit} className="space-y-6">
+                    {submitError && (
+                      <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md mb-4">
+                        <p className="text-sm">{submitError}</p>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <VVInput
-                        label="Full Name"
+                        label="Full Name *"
                         placeholder="Enter your name"
                         value={formData.name}
                         onChange={(e) =>
@@ -272,7 +359,7 @@ export default function SupportPage() {
                         required
                       />
                       <VVInput
-                        label="Email"
+                        label="Email *"
                         type="email"
                         placeholder="Enter your email"
                         value={formData.email}
@@ -294,10 +381,11 @@ export default function SupportPage() {
                           handleInputChange("phone", e.target.value)
                         }
                         leftIcon={<Phone className="h-4 w-4" />}
+                        required
                       />
                       <div className="space-y-2">
                         <label className="text-sm font-medium">
-                          Issue Type
+                          Issue Type *
                         </label>
                         <Select
                           value={formData.issueType}
@@ -323,7 +411,7 @@ export default function SupportPage() {
                     </div>
 
                     <VVInput
-                      label="Subject"
+                      label="Subject *"
                       placeholder="Brief description of your issue"
                       value={formData.subject}
                       onChange={(e) =>
@@ -333,7 +421,7 @@ export default function SupportPage() {
                     />
 
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Message</label>
+                      <label className="text-sm font-medium">Message *</label>
                       <Textarea
                         placeholder="Please describe your issue in detail..."
                         value={formData.message}
@@ -375,7 +463,7 @@ export default function SupportPage() {
 
                     <VVButton
                       type="submit"
-                      className="w-full"
+                      className="w-full cursor-pointer"
                       size="lg"
                       loading={isSubmitting}
                     >
