@@ -1,6 +1,8 @@
 // Simple token management utility functions
 // Using simple TypeScript functions instead of classes
 
+import { encrypt, decrypt } from "./crypto";
+
 export interface UserData {
   _id?: string;
   id?: string;
@@ -23,24 +25,27 @@ interface TokenData {
 }
 
 // Token key constants
-const ACCESS_TOKEN_KEY = 'vv_access_token';
-const REFRESH_TOKEN_KEY = 'vv_refresh_token';
-const USER_DATA_KEY = 'vv_user';
+const ACCESS_TOKEN_KEY = "vv_access_token";
+const REFRESH_TOKEN_KEY = "vv_refresh_token";
+const USER_DATA_KEY = "vv_user";
 
 /**
  * Store tokens and user data
  * @param tokens - Token data containing access token, refresh token, and user info
  * @param rememberMe - Whether to store in localStorage or sessionStorage
  */
-export const setTokens = (tokens: TokenData, rememberMe: boolean = false): void => {
+export const setTokens = (
+  tokens: TokenData,
+  rememberMe: boolean = false
+): void => {
   const storage = rememberMe ? localStorage : sessionStorage;
-  
+
   try {
     storage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken);
     storage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken);
     storage.setItem(USER_DATA_KEY, JSON.stringify(tokens.user));
   } catch (error) {
-    console.error('Error storing tokens:', error);
+    console.error("Error storing tokens:", error);
   }
 };
 
@@ -50,10 +55,12 @@ export const setTokens = (tokens: TokenData, rememberMe: boolean = false): void 
  */
 export const getAccessToken = (): string | null => {
   try {
-    return localStorage.getItem(ACCESS_TOKEN_KEY) || 
-           sessionStorage.getItem(ACCESS_TOKEN_KEY);
+    return (
+      localStorage.getItem(ACCESS_TOKEN_KEY) ||
+      sessionStorage.getItem(ACCESS_TOKEN_KEY)
+    );
   } catch (error) {
-    console.error('Error getting access token:', error);
+    console.error("Error getting access token:", error);
     return null;
   }
 };
@@ -64,10 +71,12 @@ export const getAccessToken = (): string | null => {
  */
 export const getRefreshToken = (): string | null => {
   try {
-    return localStorage.getItem(REFRESH_TOKEN_KEY) || 
-           sessionStorage.getItem(REFRESH_TOKEN_KEY);
+    return (
+      localStorage.getItem(REFRESH_TOKEN_KEY) ||
+      sessionStorage.getItem(REFRESH_TOKEN_KEY)
+    );
   } catch (error) {
-    console.error('Error getting refresh token:', error);
+    console.error("Error getting refresh token:", error);
     return null;
   }
 };
@@ -78,11 +87,12 @@ export const getRefreshToken = (): string | null => {
  */
 export const getUserData = (): UserData | null => {
   try {
-    const userData = localStorage.getItem(USER_DATA_KEY) || 
-                     sessionStorage.getItem(USER_DATA_KEY);
+    const userData =
+      localStorage.getItem(USER_DATA_KEY) ||
+      sessionStorage.getItem(USER_DATA_KEY);
     return userData ? JSON.parse(userData) : null;
   } catch (error) {
-    console.error('Error getting user data:', error);
+    console.error("Error getting user data:", error);
     return null;
   }
 };
@@ -100,7 +110,7 @@ export const clearTokens = (): void => {
     sessionStorage.removeItem(REFRESH_TOKEN_KEY);
     sessionStorage.removeItem(USER_DATA_KEY);
   } catch (error) {
-    console.error('Error clearing tokens:', error);
+    console.error("Error clearing tokens:", error);
   }
 };
 
@@ -121,10 +131,12 @@ export const hasTokens = (): boolean => {
 export const updateAccessToken = (newAccessToken: string): void => {
   try {
     // Determine which storage was used originally
-    const storage = localStorage.getItem(ACCESS_TOKEN_KEY) ? localStorage : sessionStorage;
+    const storage = localStorage.getItem(ACCESS_TOKEN_KEY)
+      ? localStorage
+      : sessionStorage;
     storage.setItem(ACCESS_TOKEN_KEY, newAccessToken);
   } catch (error) {
-    console.error('Error updating access token:', error);
+    console.error("Error updating access token:", error);
   }
 };
 
@@ -134,37 +146,41 @@ export const updateAccessToken = (newAccessToken: string): void => {
  */
 export const refreshAccessToken = async (): Promise<string | null> => {
   const refreshToken = getRefreshToken();
-  
+
   if (!refreshToken) {
-    console.error('No refresh token available');
+    console.error("No refresh token available");
     return null;
   }
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/refresh-token`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        data: JSON.stringify({ refreshToken }) // Following your encryption pattern
-      })
-    });
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/users/refresh-token`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          data: encrypt(JSON.stringify({ refreshToken })), // Following your encryption pattern
+        }),
+      }
+    );
 
     if (response.ok) {
       const data = await response.json();
-      
+
       // Assuming the response follows your encryption pattern
       if (data.success && data.data) {
-        const newAccessToken = JSON.parse(data.data).accessToken;
+        const decryptedData = JSON.parse(decrypt(data.data));
+        const newAccessToken = decryptedData.accessToken;
         updateAccessToken(newAccessToken);
         return newAccessToken;
       }
     }
-    
+
     return null;
   } catch (error) {
-    console.error('Token refresh failed:', error);
+    console.error("Token refresh failed:", error);
     return null;
   }
 };
@@ -175,17 +191,17 @@ export const refreshAccessToken = async (): Promise<string | null> => {
  */
 export const isTokenExpired = (): boolean => {
   const token = getAccessToken();
-  
+
   if (!token) return true;
 
   try {
     // Decode JWT payload (without verification)
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const payload = JSON.parse(atob(token.split(".")[1]));
     const currentTime = Math.floor(Date.now() / 1000);
-    
+
     return payload.exp < currentTime;
   } catch (error) {
-    console.error('Error checking token expiry:', error);
+    console.error("Error checking token expiry:", error);
     return true; // Assume expired if we can't parse
   }
 };
@@ -196,7 +212,7 @@ export const isTokenExpired = (): boolean => {
  */
 export const getUserRole = (): string => {
   const userData = getUserData();
-  return userData?.security?.role || 'user';
+  return userData?.security?.role || "user";
 };
 
 /**
@@ -208,31 +224,27 @@ export const getUserId = (): string | null => {
   return userData?._id || userData?.id || null;
 };
 
+import { logoutUserAPI } from "../services/auth.service";
+
 /**
  * Logout user by clearing tokens and optionally calling backend
  * @param callBackend - Whether to inform backend about logout
  */
-export const logoutUser = async (callBackend: boolean = true): Promise<void> => {
-  const userId = getUserId();
+export const logoutUser = async (
+  callBackend: boolean = true
+): Promise<void> => {
   const refreshToken = getRefreshToken();
+  const accessToken = getAccessToken();
 
   // Clear tokens from storage first
   clearTokens();
 
-  // Optionally inform backend to remove refresh token
-  if (callBackend && userId && refreshToken) {
+  // Optionally inform backend about logout
+  if (callBackend && accessToken) {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/remove-token/${userId}`, {
-        method: 'DELETE',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          data: JSON.stringify({ token: refreshToken })
-        })
-      });
+      await logoutUserAPI(accessToken, refreshToken || undefined);
     } catch (error) {
-      console.error('Failed to inform backend about logout:', error);
+      console.error("Failed to inform backend about logout:", error);
       // Don't throw error here as tokens are already cleared locally
     }
   }
@@ -244,17 +256,17 @@ export const logoutUser = async (callBackend: boolean = true): Promise<void> => 
  */
 export const isValidToken = (): boolean => {
   const token = getAccessToken();
-  
+
   if (!token) return false;
 
   try {
     // Basic JWT structure check
-    const parts = token.split('.');
+    const parts = token.split(".");
     if (parts.length !== 3) return false;
 
     // Try to decode payload
     const payload = JSON.parse(atob(parts[1]));
-    
+
     // Check if token has required fields
     return !!(payload.userId && payload.exp);
   } catch {

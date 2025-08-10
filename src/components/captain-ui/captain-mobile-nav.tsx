@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import LogoutButton from "@/components/ui/logout-button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 // import { Separator } from "@/components/ui/separator"
@@ -185,14 +186,15 @@ export function CaptainMobileNav() {
 
           {/* Footer */}
           <div className="border-t p-3">
-            <Button
+            <LogoutButton
               variant="ghost"
               className="w-full justify-start gap-3 text-muted-foreground hover:text-foreground"
-              onClick={() => setIsOpen(false)}
+              showConfirmDialog={true}
+              redirectTo="/"
             >
               <LogOut className="h-4 w-4" />
               Sign Out
-            </Button>
+            </LogoutButton>
           </div>
         </div>
       </SheetContent>

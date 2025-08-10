@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Navigation } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { VVButton } from "@/components/ui/vv-button";
+import LogoutButton from "@/components/ui/logout-button";
 import {
   VVCard,
   VVCardContent,
@@ -35,7 +36,6 @@ import {
   Trash2,
   Link as LinkIcon,
   ArrowLeft,
-  LogOut,
 } from "lucide-react";
 
 const userProfile = {
@@ -90,19 +90,14 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
-              <VVButton
-                className="ml-4 w-32 cursor-pointer"
+              <LogoutButton
                 variant="outline"
                 size="icon"
-                asChild
+                showConfirmDialog={true}
+                className="w-32 cursor-pointer"
               >
-                <Link href="/user/logout">
-                  {" "}
-                  {/* At this point , the person should be logged out from the Website. */}
-                  <LogOut className="h-4 w-4" />
-                  <span className="ml-2">Logout</span>
-                </Link>
-              </VVButton>
+                <span className="">Logout</span>
+              </LogoutButton>
             </div>
           </motion.div>
 

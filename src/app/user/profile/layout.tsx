@@ -1,5 +1,5 @@
 import React from "react";
-// import UserAuthGuard from "@/components/guards/UserAuthGuard";
+import UserAuthGuard from "@/components/guards/UserAuthGuard";
 
 export const metadata = {
   title: "User Dashboard",
@@ -13,9 +13,9 @@ export default function UserLayout({
 }) {
   return (
     <div className="min-h-screen">
-      {/* <UserAuthGuard> */}
+      <UserAuthGuard>
       {children}
-      {/* </UserAuthGuard> */}
+      </UserAuthGuard>
     </div>
   );
 }

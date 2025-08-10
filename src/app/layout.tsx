@@ -5,6 +5,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/ui/vv-toast";
 import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,8 +30,10 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ToastProvider>{children}</ToastProvider>
-          <Toaster position="bottom-right" reverseOrder={false} />
+          <AuthProvider>
+            <ToastProvider>{children}</ToastProvider>
+            <Toaster position="bottom-right" reverseOrder={false} />
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
