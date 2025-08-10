@@ -1,18 +1,42 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Navigation } from "@/components/layout/navbar"
-import { Footer } from "@/components/layout/footer"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
-import Link from "next/link"
-import { CalendarIcon, Clock, Pause, Play, Edit, Trash2, Plus, Download, Filter } from "lucide-react"
+import { useState } from "react";
+import { Navigation } from "@/components/layout/navbar";
+import { Footer } from "@/components/layout/footer";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import Link from "next/link";
+import {
+  CalendarIcon,
+  Clock,
+  Pause,
+  Play,
+  Edit,
+  Trash2,
+  Plus,
+  Download,
+  Filter,
+  ArrowLeft,
+} from "lucide-react";
+import { VVButton } from "@/components/ui/vv-button";
 
 const activeSubscriptions = [
   {
@@ -43,7 +67,7 @@ const activeSubscriptions = [
     meals: ["Breakfast", "Lunch", "Dinner"],
     nextDelivery: "Paused",
   },
-]
+];
 
 const orderHistory = [
   {
@@ -73,23 +97,23 @@ const orderHistory = [
     rating: 5,
     deliveryTime: "12:45 PM",
   },
-]
+];
 
 export default function OrdersPage() {
-  const [selectedDate, setSelectedDate] = useState<Date>()
-  const [filterStatus, setFilterStatus] = useState("all")
+  const [selectedDate, setSelectedDate] = useState<Date>();
+  const [filterStatus, setFilterStatus] = useState("all");
 
   const handlePauseSubscription = (id: string) => {
-    console.log("Pausing subscription:", id)
-  }
+    console.log("Pausing subscription:", id);
+  };
 
   const handleResumeSubscription = (id: string) => {
-    console.log("Resuming subscription:", id)
-  }
+    console.log("Resuming subscription:", id);
+  };
 
   const handleCancelSubscription = (id: string) => {
-    console.log("Cancelling subscription:", id)
-  }
+    console.log("Cancelling subscription:", id);
+  };
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -99,9 +123,20 @@ export default function OrdersPage() {
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">My Orders & Subscriptions</h1>
-              <p className="text-muted-foreground">Manage your meal plans and view order history</p>
+            <div className="flex items-center gap-4">
+              <VVButton variant="ghost" size="icon" asChild>
+                <Link href="/user/profile">
+                  <ArrowLeft className="h-4 w-4" />
+                </Link>
+              </VVButton>
+              <div className="flex flex-col">
+                <h1 className="text-3xl font-bold mb-2">
+                  My Orders & Subscriptions
+                </h1>
+                <p className="text-muted-foreground">
+                  Manage your meal plans and view order history
+                </p>
+              </div>
             </div>
             <Button asChild>
               <Link href="/booking">
@@ -113,7 +148,9 @@ export default function OrdersPage() {
 
           <Tabs defaultValue="subscriptions" className="space-y-6">
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="subscriptions">Active Subscriptions</TabsTrigger>
+              <TabsTrigger value="subscriptions">
+                Active Subscriptions
+              </TabsTrigger>
               <TabsTrigger value="history">Order History</TabsTrigger>
               <TabsTrigger value="upcoming">Upcoming Meals</TabsTrigger>
             </TabsList>
@@ -128,17 +165,28 @@ export default function OrdersPage() {
                         <div>
                           <CardTitle className="flex items-center gap-2">
                             {subscription.name}
-                            <Badge variant={subscription.status === "active" ? "default" : "secondary"}>
+                            <Badge
+                              variant={
+                                subscription.status === "active"
+                                  ? "default"
+                                  : "secondary"
+                              }
+                            >
                               {subscription.status}
                             </Badge>
                           </CardTitle>
                           <p className="text-muted-foreground">
-                            {subscription.type} Plan • {subscription.meals.join(", ")}
+                            {subscription.type} Plan •{" "}
+                            {subscription.meals.join(", ")}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-2xl font-bold">₹{subscription.price}</p>
-                          <p className="text-sm text-muted-foreground">Total amount</p>
+                          <p className="text-2xl font-bold">
+                            ₹{subscription.price}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Total amount
+                          </p>
                         </div>
                       </div>
                     </CardHeader>
@@ -149,10 +197,14 @@ export default function OrdersPage() {
                         <div className="flex justify-between text-sm mb-2">
                           <span>Progress</span>
                           <span>
-                            {subscription.mealsCompleted}/{subscription.totalMeals} meals
+                            {subscription.mealsCompleted}/
+                            {subscription.totalMeals} meals
                           </span>
                         </div>
-                        <Progress value={subscription.progress} className="h-2" />
+                        <Progress
+                          value={subscription.progress}
+                          className="h-2"
+                        />
                         <div className="flex justify-between text-xs text-muted-foreground mt-1">
                           <span>Started: {subscription.startDate}</span>
                           <span>Ends: {subscription.endDate}</span>
@@ -176,12 +228,24 @@ export default function OrdersPage() {
                       {/* Actions */}
                       <div className="flex flex-wrap gap-2">
                         {subscription.status === "active" ? (
-                          <Button variant="outline" size="sm" onClick={() => handlePauseSubscription(subscription.id)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handlePauseSubscription(subscription.id)
+                            }
+                          >
                             <Pause className="h-4 w-4 mr-1" />
                             Pause
                           </Button>
                         ) : (
-                          <Button variant="outline" size="sm" onClick={() => handleResumeSubscription(subscription.id)}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              handleResumeSubscription(subscription.id)
+                            }
+                          >
                             <Play className="h-4 w-4 mr-1" />
                             Resume
                           </Button>
@@ -200,24 +264,36 @@ export default function OrdersPage() {
                             </DialogHeader>
                             <div className="space-y-4">
                               <div>
-                                <label className="text-sm font-medium">Delivery Time</label>
+                                <label className="text-sm font-medium">
+                                  Delivery Time
+                                </label>
                                 <Select>
                                   <SelectTrigger>
                                     <SelectValue placeholder="Select time" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="morning">8:00 AM - 10:00 AM</SelectItem>
-                                    <SelectItem value="lunch">12:00 PM - 2:00 PM</SelectItem>
-                                    <SelectItem value="evening">6:00 PM - 8:00 PM</SelectItem>
+                                    <SelectItem value="morning">
+                                      8:00 AM - 10:00 AM
+                                    </SelectItem>
+                                    <SelectItem value="lunch">
+                                      12:00 PM - 2:00 PM
+                                    </SelectItem>
+                                    <SelectItem value="evening">
+                                      6:00 PM - 8:00 PM
+                                    </SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
                               <div>
-                                <label className="text-sm font-medium">Skip Dates</label>
+                                <label className="text-sm font-medium">
+                                  Skip Dates
+                                </label>
                                 <Calendar
                                   mode="multiple"
                                   selected={selectedDate ? [selectedDate] : []}
-                                  onSelect={(dates) => setSelectedDate(dates?.[0])}
+                                  onSelect={(dates) =>
+                                    setSelectedDate(dates?.[0])
+                                  }
                                   className="rounded-md border"
                                 />
                               </div>
@@ -226,7 +302,13 @@ export default function OrdersPage() {
                           </DialogContent>
                         </Dialog>
 
-                        <Button variant="outline" size="sm" onClick={() => handleCancelSubscription(subscription.id)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            handleCancelSubscription(subscription.id)
+                          }
+                        >
                           <Trash2 className="h-4 w-4 mr-1" />
                           Cancel
                         </Button>
@@ -244,9 +326,12 @@ export default function OrdersPage() {
                   <Card>
                     <CardContent className="p-12 text-center">
                       <CalendarIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                      <h3 className="font-semibold mb-2">No Active Subscriptions</h3>
+                      <h3 className="font-semibold mb-2">
+                        No Active Subscriptions
+                      </h3>
                       <p className="text-muted-foreground mb-4">
-                        Start your healthy meal journey with our subscription plans
+                        Start your healthy meal journey with our subscription
+                        plans
                       </p>
                       <Button asChild>
                         <Link href="/booking">Browse Plans</Link>
@@ -287,8 +372,12 @@ export default function OrdersPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                             <div>
-                              <h3 className="font-semibold">Order #{order.id}</h3>
-                              <p className="text-sm text-muted-foreground">{order.items.join(", ")}</p>
+                              <h3 className="font-semibold">
+                                Order #{order.id}
+                              </h3>
+                              <p className="text-sm text-muted-foreground">
+                                {order.items.join(", ")}
+                              </p>
                               <p className="text-xs text-muted-foreground">
                                 {order.date} • Delivered at {order.deliveryTime}
                               </p>
@@ -301,7 +390,11 @@ export default function OrdersPage() {
                                 {[...Array(5)].map((_, i) => (
                                   <span
                                     key={i}
-                                    className={`text-xs ${i < order.rating ? "text-yellow-400" : "text-gray-300"}`}
+                                    className={`text-xs ${
+                                      i < order.rating
+                                        ? "text-yellow-400"
+                                        : "text-gray-300"
+                                    }`}
                                   >
                                     ★
                                   </span>
@@ -343,16 +436,39 @@ export default function OrdersPage() {
                     <CardContent>
                       <div className="space-y-3">
                         {[
-                          { day: "Today", meals: ["Classic Veg Thali", "Protein Power Bowl"] },
-                          { day: "Tomorrow", meals: ["South Indian Delight", "Keto Diet Special"] },
-                          { day: "Wednesday", meals: ["Fitness Special", "Classic Veg Thali"] },
-                          { day: "Thursday", meals: ["Premium Thali", "Diet Bowl"] },
-                          { day: "Friday", meals: ["Regional Special", "Light Dinner"] },
+                          {
+                            day: "Today",
+                            meals: ["Classic Veg Thali", "Protein Power Bowl"],
+                          },
+                          {
+                            day: "Tomorrow",
+                            meals: [
+                              "South Indian Delight",
+                              "Keto Diet Special",
+                            ],
+                          },
+                          {
+                            day: "Wednesday",
+                            meals: ["Fitness Special", "Classic Veg Thali"],
+                          },
+                          {
+                            day: "Thursday",
+                            meals: ["Premium Thali", "Diet Bowl"],
+                          },
+                          {
+                            day: "Friday",
+                            meals: ["Regional Special", "Light Dinner"],
+                          },
                         ].map((day, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div
+                            key={index}
+                            className="flex items-center justify-between p-3 border rounded-lg"
+                          >
                             <div>
                               <h4 className="font-medium">{day.day}</h4>
-                              <p className="text-sm text-muted-foreground">{day.meals.join(", ")}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {day.meals.join(", ")}
+                              </p>
                             </div>
                             <div className="flex gap-2">
                               <Button variant="outline" size="sm">
@@ -378,7 +494,8 @@ export default function OrdersPage() {
                         <CalendarIcon className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                         <h3 className="font-semibold mb-2">Plan Next Week</h3>
                         <p className="text-muted-foreground mb-4">
-                          Your next week&apos;s meals will be available for planning soon
+                          Your next week&apos;s meals will be available for
+                          planning soon
                         </p>
                         <Button asChild>
                           <Link href="/booking">Plan Meals</Link>
@@ -400,11 +517,17 @@ export default function OrdersPage() {
                           Add Meals
                         </Link>
                       </Button>
-                      <Button variant="outline" className="w-full justify-start">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start"
+                      >
                         <Pause className="h-4 w-4 mr-2" />
                         Pause All
                       </Button>
-                      <Button variant="outline" className="w-full justify-start">
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start"
+                      >
                         <Edit className="h-4 w-4 mr-2" />
                         Bulk Modify
                       </Button>
@@ -419,5 +542,5 @@ export default function OrdersPage() {
 
       <Footer />
     </div>
-  )
+  );
 }

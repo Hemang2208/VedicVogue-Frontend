@@ -4,6 +4,7 @@ import type React from "react";
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Navigation } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,13 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Eye, EyeOff, Mail, Lock, Facebook, Chrome } from "lucide-react";
+import { collectClientData, UserData } from "@/utils/collectData";
+import toast from "react-hot-toast";
+import { encrypt, decrypt } from "@/utils/crypto";
+import { setTokens } from "@/utils/tokenManager";
 
 export default function SignInPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -58,12 +64,68 @@ export default function SignInPage() {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Collect client data for enhanced security
+      const clientData: UserData = await collectClientData();
+
+      // Prepare login data
+      const loginData = {
+        email: email.toLowerCase().trim(),
+        password: password,
+        rememberMe: rememberMe,
+        clientData: clientData
+      };
+
+      // Encrypt the login data
+      const encryptedData = encrypt(JSON.stringify(loginData));
+
+      // Make API call to backend
+      const URL = process.env.NEXT_PUBLIC_API_URL;
+      const response = await fetch(`${URL}/api/users/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ data: encryptedData }),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast.error("Invalid email or password. Please try again.");
+        } else if (response.status === 403) {
+          toast.error("Account is deactivated or banned. Please contact support.");
+        } else if (response.status === 400) {
+          toast.error("Please check your email and password format.");
+        } else {
+          toast.error(responseData.message || "Login failed. Please try again.");
+        }
+        return;
+      }
+
+      // Decrypt and parse the response data
+      const decryptedResponse = JSON.parse(decrypt(responseData.data));
+      const { user, tokens } = decryptedResponse;
+
+      // Store tokens using token manager
+      setTokens({ 
+        accessToken: tokens.accessToken, 
+        refreshToken: tokens.refreshToken, 
+        user: user 
+      }, rememberMe);
+
+      toast.success("Login successful! Redirecting to your profile...");
+      
+      // Redirect to user profile
+      router.push("/user/profile");
+      
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
       setIsLoading(false);
-      // In a real app, handle successful login here
-      console.log("Login attempt:", { email, password, rememberMe });
-    }, 2000);
+    }
   };
 
   const handleSocialLogin = (provider: string) => {

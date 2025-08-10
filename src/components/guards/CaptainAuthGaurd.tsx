@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 import axios from "axios";
+import { getAccessToken, refreshAccessToken, clearTokens, hasTokens } from "@/utils/tokenManager";
 
 export default function CaptainAuthGuard({
   children,
@@ -16,11 +16,14 @@ export default function CaptainAuthGuard({
 
   useEffect(() => {
     const checkAuth = async () => {
-      const localToken = localStorage.getItem("accessToken");
-      const cookieToken = Cookies.get("accessToken");
+      // Check if tokens exist
+      if (!hasTokens()) {
+        setIsAuthenticated(false);
+        setLoading(false);
+        return;
+      }
 
-      // Choose token priority: cookie > localStorage
-      const token = cookieToken || localToken;
+      const token = getAccessToken();
 
       if (!token) {
         setIsAuthenticated(false);
@@ -29,8 +32,9 @@ export default function CaptainAuthGuard({
       }
 
       try {
-        // Hit your backend route to validate the token from MongoDB
-        const res = await axios.get("/api/auth/validate", {
+        // Try to validate current token
+        const URL = process.env.NEXT_PUBLIC_API_URL;
+        const res = await axios.get(`${URL}/api/users/validate-token`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -39,10 +43,21 @@ export default function CaptainAuthGuard({
         if (res.status === 200 && res.data.valid) {
           setIsAuthenticated(true);
         } else {
-          setIsAuthenticated(false);
+          throw new Error('Token invalid');
         }
       } catch {
-        setIsAuthenticated(false);
+        console.log('Token validation failed, attempting refresh...');
+        
+        // Try to refresh token
+        const newToken = await refreshAccessToken();
+        
+        if (newToken) {
+          setIsAuthenticated(true);
+        } else {
+          // Refresh failed, clear tokens and redirect
+          clearTokens();
+          setIsAuthenticated(false);
+        }
       } finally {
         setLoading(false);
       }
