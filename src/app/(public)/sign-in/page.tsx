@@ -12,8 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff, Mail, Lock, Facebook, Chrome } from "lucide-react";
+// import { Separator } from "@/components/ui/separator";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  // Facebook, Chrome
+} from "lucide-react";
 import { collectClientData, UserData } from "@/utils/collectData";
 import toast from "react-hot-toast";
 import { encrypt, decrypt } from "@/utils/crypto";
@@ -65,21 +71,17 @@ export default function SignInPage() {
     setIsLoading(true);
 
     try {
-      // Collect client data for enhanced security
       const clientData: UserData = await collectClientData();
 
-      // Prepare login data
       const loginData = {
         email: email.toLowerCase().trim(),
         password: password,
         rememberMe: rememberMe,
-        clientData: clientData
+        clientData: clientData,
       };
 
-      // Encrypt the login data
       const encryptedData = encrypt(JSON.stringify(loginData));
 
-      // Make API call to backend
       const URL = process.env.NEXT_PUBLIC_API_URL;
       const response = await fetch(`${URL}/api/users/login`, {
         method: "POST",
@@ -95,31 +97,33 @@ export default function SignInPage() {
         if (response.status === 401) {
           toast.error("Invalid email or password. Please try again.");
         } else if (response.status === 403) {
-          toast.error("Account is deactivated or banned. Please contact support.");
+          toast.error(
+            "Account is deactivated or banned. Please contact support."
+          );
         } else if (response.status === 400) {
           toast.error("Please check your email and password format.");
         } else {
-          toast.error(responseData.message || "Login failed. Please try again.");
+          toast.error(
+            responseData.message || "Login failed. Please try again."
+          );
         }
         return;
       }
 
-      // Decrypt and parse the response data
       const decryptedResponse = JSON.parse(decrypt(responseData.data));
       const { user, tokens } = decryptedResponse;
 
-      // Store tokens using token manager
-      setTokens({ 
-        accessToken: tokens.accessToken, 
-        refreshToken: tokens.refreshToken, 
-        user: user 
-      }, rememberMe);
+      setTokens(
+        {
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          user: user,
+        },
+        rememberMe
+      );
 
       toast.success("Login successful! Redirecting to your profile...");
-      
-      // Redirect to user profile
       router.push("/user/profile");
-      
     } catch (error) {
       console.error("Login error:", error);
       toast.error("Something went wrong. Please try again.");
@@ -128,10 +132,9 @@ export default function SignInPage() {
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    console.log(`Login with ${provider}`);
-    // In a real app, handle social login here
-  };
+  // const handleSocialLogin = (provider: string) => {
+  //   console.log(`Login with ${provider}`);
+  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-green-50">
@@ -156,7 +159,7 @@ export default function SignInPage() {
 
             <CardContent className="space-y-6 px-4 sm:px-6 pb-6 sm:pb-8">
               {/* Social Login Buttons */}
-              <div className="space-y-3">
+              {/* <div className="space-y-3">
                 <Button
                   variant="outline"
                   className="w-full h-11 border-2 hover:border-orange-300 hover:bg-orange-50 transition-all duration-200"
@@ -174,9 +177,9 @@ export default function SignInPage() {
                   <Facebook className="h-4 w-4 mr-2" />
                   Continue with Facebook
                 </Button>
-              </div>
+              </div> */}
 
-              <div className="relative">
+              {/* <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <Separator className="bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
                 </div>
@@ -185,7 +188,7 @@ export default function SignInPage() {
                     Or continue with email
                   </span>
                 </div>
-              </div>
+              </div> */}
 
               {/* Email/Password Form */}
               <form onSubmit={handleSubmit} className="space-y-5">

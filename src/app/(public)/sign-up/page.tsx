@@ -209,18 +209,18 @@ export default function SignUpPage() {
   ) => {
     return {
       userId: ID,
-      fullname: stepOne.fullName,
+      fullname: stepOne.fullName.trim(),
       account: {
-        email: stepOne.email,
-        phone: stepOne.phone,
-        password: stepOne.password, // This should be hashed on the backend
-        gender: "other", // Default value as per model
+        email: stepOne.email.toLowerCase().trim(),
+        phone: stepOne.phone.toLowerCase().trim(),
+        password: stepOne.password,
+        gender: "other",
         profilePictureUrl: "",
       },
       security: {
         role: "user",
         ipAddress: clientData.ip,
-        tokens: [], // Will be populated on login
+        tokens: [],
       },
       addresses: [
         {
