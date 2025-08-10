@@ -233,10 +233,6 @@ export default function SignUpPage() {
           state: stepTwo.state,
           zipcode: stepTwo.zipcode,
           country: stepTwo.country,
-          coordinates: {
-            latitude: clientData.geo.latitude || 0,
-            longitude: clientData.geo.longitude || 0,
-          },
         },
       ],
       activity: {
@@ -263,6 +259,10 @@ export default function SignUpPage() {
         paymentMethod: [],
       },
       additionalInfo: {
+        coordinates: {
+          latitude: clientData.geo.latitude ?? undefined,
+          longitude: clientData.geo.longitude ?? undefined,
+        },
         timezone: clientData.geo.timezone || "",
         isp: clientData.geo.isp || "",
         org: clientData.geo.org || "",
@@ -720,7 +720,6 @@ export default function SignUpPage() {
             <Input
               id="landmark"
               placeholder="Near Metro Station"
-              required
               value={stepTwoData.landmark}
               onChange={(e) => handleStepTwoChange("landmark", e.target.value)}
               className="pl-10 h-11 border-2 border-gray-200 focus:border-orange-400 transition-all duration-200"

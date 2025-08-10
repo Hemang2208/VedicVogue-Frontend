@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navigation } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { VVButton } from "@/components/ui/vv-button";
@@ -23,7 +23,6 @@ import {
   Phone,
   Edit,
   Save,
-  Star,
   Users,
   LayoutDashboard,
   Download,
@@ -36,33 +35,118 @@ import {
   Trash2,
   Link as LinkIcon,
   ArrowLeft,
+  Loader2,
 } from "lucide-react";
-
-const userProfile = {
-  name: "Priya Sharma",
-  email: "priya.sharma@email.com",
-  phone: "+91 98765 43210",
-  avatar: "https://placehold.co/100x100/svg",
-  memberSince: "January 2024",
-  gender: "other",
-  totalOrders: 45,
-  favoriteCategory: "Vegetarian",
-  rating: 4.8,
-};
+import { useAppDispatch } from "@/redux/hooks";
+import { updateUserProfile } from "@/redux/slice/user/profile.slice";
+import { useUserProfile } from "@/hooks/useUserProfile";
+import { toast } from "react-hot-toast";
 
 export default function ProfilePage() {
-  const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState(userProfile);
+  const dispatch = useAppDispatch();
+  const { profile, loading, error } = useUserProfile();
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // In a real app, save to backend
-    console.log("Saving profile:", profileData);
+  const [isEditing, setIsEditing] = useState(false);
+  const [localProfileData, setLocalProfileData] = useState({
+    fullname: "",
+    email: "",
+    phone: "",
+    gender: "other" as "male" | "female" | "other",
+  });
+
+  // Update local state when profile is loaded
+  useEffect(() => {
+    if (profile) {
+      setLocalProfileData({
+        fullname: profile.fullname || "",
+        email: profile.account?.email || "",
+        phone: profile.account?.phone || "",
+        gender: profile.account?.gender || "other",
+      });
+    }
+  }, [profile]);
+
+  const handleSave = async () => {
+    if (!profile) return;
+
+    try {
+      const updateData = {
+        fullname: localProfileData.fullname,
+        account: {
+          ...profile.account,
+          email: localProfileData.email,
+          phone: localProfileData.phone,
+          gender: localProfileData.gender,
+        },
+      };
+
+      await dispatch(
+        updateUserProfile({
+          userId: profile._id,
+          profileData: updateData,
+        })
+      ).unwrap();
+
+      setIsEditing(false);
+      toast.success("Profile updated successfully!");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile");
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setProfileData((prev) => ({ ...prev, [field]: value }));
+    setLocalProfileData((prev) => ({ ...prev, [field]: value }));
   };
+
+  // Helper function to format member since date
+  const formatMemberSince = (date: Date) => {
+    if (!date) return "N/A";
+    return new Date(date).toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-muted-foreground">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Error: {error}</p>
+          <VVButton onClick={() => window.location.reload()}>
+            Try Again
+          </VVButton>
+        </div>
+      </div>
+    );
+  }
+
+  // No profile state
+  if (!profile) {
+    return (
+      <div className="min-h-screen bg-muted/30 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">No profile data found</p>
+          <VVButton asChild>
+            <Link href="/auth/login">Login</Link>
+          </VVButton>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -80,7 +164,7 @@ export default function ProfilePage() {
               <div className="flex items-center gap-2">
                 <VVButton variant="ghost" size="icon" asChild>
                   <Link href="/">
-                    <ArrowLeft className="h-4 w-4" />
+                    <ArrowLeft className="h-4 w-4 text-black" />
                   </Link>
                 </VVButton>
                 <div className="flex flex-col">
@@ -140,8 +224,14 @@ export default function ProfilePage() {
                         onClick={() =>
                           isEditing ? handleSave() : setIsEditing(true)
                         }
+                        disabled={loading}
                       >
-                        {isEditing ? (
+                        {loading ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Saving...
+                          </>
+                        ) : isEditing ? (
                           <>
                             <Save className="mr-2 h-4 w-4" />
                             Save Changes
@@ -162,42 +252,44 @@ export default function ProfilePage() {
                         <Avatar className="h-24 w-24">
                           <AvatarImage
                             src={
-                              profileData.avatar ||
-                              "https://placehold.co/50x50/svg"
+                              profile.account?.profilePictureUrl ||
+                              (profile.account?.gender === "male"
+                                ? "/BOY.svg"
+                                : profile.account?.gender === "female"
+                                ? "/GIRL.svg"
+                                : "https://placehold.co/50x50/svg")
                             }
                           />
                           <AvatarFallback className="text-lg">
-                            {profileData.name
+                            {profile.fullname
                               .split(" ")
                               .map((n) => n[0])
                               .join("")}
                           </AvatarFallback>
                         </Avatar>
-                        {/* {isEditing && (
-                          <VVButton
-                            size="icon"
-                            variant="outline"
-                            className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full"
-                          >
-                            <Camera className="h-4 w-4" />
-                          </VVButton>
-                        )} */}
                       </div>
                       <div>
                         <h3 className="font-semibold text-lg">
-                          {profileData.name}
+                          {profile.fullname}
                         </h3>
                         <p className="text-muted-foreground">
-                          {profileData.email}
+                          {profile.account?.email}
                         </p>
                         <div className="flex items-center gap-4 mt-2">
-                          <VVBadge variant="secondary">Premium Member</VVBadge>
-                          <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span className="text-sm font-medium">
-                              {profileData.rating}
-                            </span>
-                          </div>
+                          <VVBadge
+                            variant={
+                              profile.status?.isVerified
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
+                            {profile.status?.isVerified
+                              ? "Verified Member"
+                              : "Unverified"}
+                          </VVBadge>
+                          <VVBadge variant="outline">
+                            {profile.security?.role || "User"}
+                          </VVBadge>
                         </div>
                       </div>
                     </div>
@@ -206,53 +298,57 @@ export default function ProfilePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <VVInput
                         label="Full Name"
-                        value={profileData.name}
+                        value={localProfileData.fullname}
                         onChange={(e) =>
-                          handleInputChange("name", e.target.value)
+                          handleInputChange("fullname", e.target.value)
                         }
                         disabled={!isEditing}
-                        leftIcon={<User className="h-4 w-4" />}
+                        leftIcon={<User className="h-4 w-4 text-black" />}
                       />
 
                       <VVInput
                         label="Email"
                         type="email"
-                        value={profileData.email}
+                        value={localProfileData.email}
                         onChange={(e) =>
                           handleInputChange("email", e.target.value)
                         }
                         disabled={!isEditing}
-                        leftIcon={<Mail className="h-4 w-4" />}
+                        leftIcon={<Mail className="h-4 w-4 text-black" />}
                       />
 
                       <VVInput
                         label="Phone Number"
-                        value={profileData.phone}
+                        value={localProfileData.phone}
                         onChange={(e) =>
                           handleInputChange("phone", e.target.value)
                         }
                         disabled={!isEditing}
-                        leftIcon={<Phone className="h-4 w-4" />}
+                        leftIcon={<Phone className="h-4 w-4 text-black" />}
                       />
 
-                      <VVInput
-                        label="Gender"
-                        value={profileData.gender}
-                        onChange={(e) =>
-                          handleInputChange("gender", e.target.value)
-                        }
-                        disabled={!isEditing}
-                        leftIcon={<Users className="h-4 w-4" />}
-                      />
-
-                      {/* <div className="space-y-2">
-                      <label className="text-sm font-medium">
-                        Member Since
-                      </label>
-                      <div className="p-3 bg-muted/50 rounded-md text-sm text-muted-foreground">
-                        {profileData.memberSince}
+                      <div className="flex flex-col space-y-2">
+                        <label className="text-sm font-medium">Gender</label>
+                        <div className="flex items-center relative">
+                          <Users className="h-4 w-4 text-black absolute left-3" />
+                          <select
+                            value={localProfileData.gender}
+                            onChange={(e) =>
+                              handleInputChange("gender", e.target.value)
+                            }
+                            disabled={!isEditing}
+                            className={`w-full pl-10 h-10 rounded-md border ${
+                              !isEditing
+                                ? "bg-muted text-muted-foreground"
+                                : "bg-background"
+                            } text-sm`}
+                          >
+                            <option value="other">Other</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                          </select>
+                        </div>
                       </div>
-                      </div> */}
                     </div>
 
                     {/* Stats */}
@@ -262,12 +358,12 @@ export default function ProfilePage() {
                           Member Since
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {profileData.memberSince}
+                          {formatMemberSince(profile.activity?.memberSince)}
                         </div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-primary">
-                          {profileData.totalOrders}
+                          {profile.activity?.orders?.length || 0}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           Total Orders
@@ -275,18 +371,18 @@ export default function ProfilePage() {
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-primary">
-                          {profileData.rating}
+                          {profile.activity?.loyaltyPoints || 0}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          Average Rating
+                          Loyalty Points
                         </div>
                       </div>
                       <div className="text-center">
                         <div className="text-lg font-bold text-primary">
-                          {profileData.favoriteCategory}
+                          {profile.activity?.favorites?.length || 0}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          Favorite Category
+                          Favorite Items
                         </div>
                       </div>
                     </div>
