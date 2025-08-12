@@ -1,6 +1,7 @@
 import { encrypt, decrypt } from '@/utils/crypto';
 import { getAccessToken, getUserData } from '@/utils/tokenManager';
 import { UserProfile } from '@/redux/slice/user/profile.slice';
+import { handleAPIError } from '@/utils/apiErrorHandler';
 
 /**
  * Fetch user profile by user ID
@@ -31,6 +32,10 @@ export const getUserProfileAPI = async (userId: string): Promise<UserProfile> =>
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      
+      // Use the global error handler
+      handleAPIError(response, errorData, 'Failed to fetch user profile');
+      
       throw new Error(errorData.message || 'Failed to fetch user profile');
     }
 
@@ -83,6 +88,10 @@ export const updateUserProfileAPI = async (
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      
+      // Use the global error handler
+      handleAPIError(response, errorData, 'Failed to update user profile');
+      
       throw new Error(errorData.message || 'Failed to update user profile');
     }
 

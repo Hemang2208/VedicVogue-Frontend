@@ -110,9 +110,20 @@ export type UserData = {
 
 const getPublicIp = async (): Promise<string> => {
   try {
-    const res = await fetch("https://api.ipify.org/?format=json", {
-      method: "GET",
+    // Create a timeout promise
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Timeout')), 3000); // 3 second timeout
     });
+
+    // Race between fetch and timeout
+    const res = await Promise.race([
+      fetch("https://api.ipify.org/?format=json", {
+        method: "GET",
+        signal: AbortSignal.timeout(3000), // Additional timeout signal
+      }),
+      timeoutPromise
+    ]);
+
     const data = await res.json();
     return data.ip ?? "UNKNOWN";
   } catch {
@@ -145,9 +156,20 @@ const getGeoLocation = async (): Promise<GeoInfo> => {
 
   // Get additional geo info from IP
   try {
-    const response = await fetch("http://ip-api.com/json/", {
-      method: "GET",
+    // Create a timeout promise
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Timeout')), 3000); // 3 second timeout
     });
+
+    // Race between fetch and timeout
+    const response = await Promise.race([
+      fetch("http://ip-api.com/json/", {
+        method: "GET",
+        signal: AbortSignal.timeout(3000), // Additional timeout signal
+      }),
+      timeoutPromise
+    ]);
+
     const ipGeoData = await response.json();
     if (ipGeoData.status === "success") {
       geoData.country = ipGeoData.country;

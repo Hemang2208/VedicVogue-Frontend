@@ -15,6 +15,7 @@ import { VVInput } from "@/components/ui/vv-input";
 import { VVBadge } from "@/components/ui/vv-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { EmailVerificationPopup } from "@/components/ui/EmailVerificationPopup";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
@@ -47,6 +48,7 @@ export default function ProfilePage() {
   const { profile, loading, error } = useUserProfile();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isVerificationPopupOpen, setIsVerificationPopupOpen] = useState(false);
   const [localProfileData, setLocalProfileData] = useState({
     fullname: "",
     email: "",
@@ -97,6 +99,11 @@ export default function ProfilePage() {
 
   const handleInputChange = (field: string, value: string) => {
     setLocalProfileData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleVerificationSuccess = () => {
+    // Refresh the profile data to reflect the updated verification status
+    window.location.reload();
   };
 
   // Helper function to format member since date
@@ -160,7 +167,7 @@ export default function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-center justify-between">
               <div className="flex items-center gap-2">
                 <VVButton variant="ghost" size="icon" asChild>
                   <Link href="/">
@@ -178,7 +185,7 @@ export default function ProfilePage() {
                 variant="outline"
                 size="icon"
                 showConfirmDialog={true}
-                className="w-32 cursor-pointer"
+                className="w-32 cursor-pointer items-center mt-4 sm:mt-0"
               >
                 <span className="">Logout</span>
               </LogoutButton>
@@ -218,31 +225,43 @@ export default function ProfilePage() {
                   <VVCardHeader>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-3 mb-5 sm:mb-1">
                       <VVCardTitle>Personal Information</VVCardTitle>
-                      <VVButton
-                        className="cursor-pointer"
-                        variant={isEditing ? "default" : "outline"}
-                        onClick={() =>
-                          isEditing ? handleSave() : setIsEditing(true)
-                        }
-                        disabled={loading}
-                      >
-                        {loading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Saving...
-                          </>
-                        ) : isEditing ? (
-                          <>
-                            <Save className="mr-2 h-4 w-4" />
-                            Save Changes
-                          </>
-                        ) : (
-                          <>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit Profile
-                          </>
+                      <div className="flex flex-col items-center gap-2">
+                        <VVButton
+                          className="cursor-pointer"
+                          variant={isEditing ? "default" : "outline"}
+                          onClick={() =>
+                            isEditing ? handleSave() : setIsEditing(true)
+                          }
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Saving...
+                            </>
+                          ) : isEditing ? (
+                            <>
+                              <Save className="mr-2 h-4 w-4" />
+                              Save Changes
+                            </>
+                          ) : (
+                            <>
+                              <Edit className="mr-2 h-4 w-4" />
+                              Edit Profile
+                            </>
+                          )}
+                        </VVButton>
+
+                        {!profile.status?.isVerified && (
+                          <VVButton
+                            variant="outline"
+                            onClick={() => setIsVerificationPopupOpen(true)}
+                            className="text-sm w-full cursor-pointer"
+                          >
+                            Get Verified
+                          </VVButton>
                         )}
-                      </VVButton>
+                      </div>
                     </div>
                   </VVCardHeader>
                   <VVCardContent className="space-y-6">
@@ -287,8 +306,9 @@ export default function ProfilePage() {
                               ? "Verified Member"
                               : "Unverified"}
                           </VVBadge>
+
                           <VVBadge variant="outline">
-                            {profile.security?.role || "User"}
+                            User ID: {profile.userID || "User"}
                           </VVBadge>
                         </div>
                       </div>
@@ -541,9 +561,31 @@ export default function ProfilePage() {
                 </div>
               </VVCardContent>
             </VVCard>
+            <p className="text-muted-foreground mt-2">
+              <strong>Important:</strong> Keep your User ID safe. If your
+              account becomes inactive or is banned, you&apos;ll need this ID to
+              contact support and verify your identity when submitting a support
+              ticket on{" "}
+              <Link
+                // target="_blank"
+                className="text-black hover:underline cursor-pointer"
+                href="/contact"
+              >
+                Vedic Vogue Support
+              </Link>
+              .
+            </p>
           </motion.div>
         </div>
       </div>
+
+      {/* Email Verification Popup */}
+      <EmailVerificationPopup
+        open={isVerificationPopupOpen}
+        onOpenChange={setIsVerificationPopupOpen}
+        userEmail={profile?.account?.email || ""}
+        onVerificationSuccess={handleVerificationSuccess}
+      />
 
       <Footer />
     </div>

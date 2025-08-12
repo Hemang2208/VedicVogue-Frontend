@@ -94,18 +94,41 @@ export default function SignInPage() {
       const responseData = await response.json();
 
       if (!response.ok) {
+        const errorMessage = responseData.message || "";
+
+        // Check for specific account status issues first
+        if (errorMessage.includes("Your account is banned")) {
+          toast.error(
+            "Your account is banned. Kindly talk to Support on /contact to get your account updated."
+          );
+          return;
+        } else if (errorMessage.includes("Your account is inactive")) {
+          toast.error(
+            "Your account is inactive. Kindly talk to Support on /contact to get your account updated."
+          );
+          return;
+        } else if (errorMessage.includes("Your account is deleted")) {
+          toast.error(
+            "Your account is deleted. Kindly talk to Support on /contact to get your account updated."
+          );
+          return;
+        } else if (
+          errorMessage.includes("Kindly talk to Support on /contact")
+        ) {
+          // Fallback for any other support-related messages
+          toast.error(errorMessage);
+          return;
+        }
+
+        // Handle other HTTP status codes
         if (response.status === 401) {
           toast.error("Invalid email or password. Please try again.");
         } else if (response.status === 403) {
-          toast.error(
-            "Account is deactivated or banned. Please contact support."
-          );
+          toast.error("Account access denied. Please contact support.");
         } else if (response.status === 400) {
           toast.error("Please check your email and password format.");
         } else {
-          toast.error(
-            responseData.message || "Login failed. Please try again."
-          );
+          toast.error(errorMessage || "Login failed. Please try again.");
         }
         return;
       }
@@ -126,7 +149,22 @@ export default function SignInPage() {
       router.push("/user/profile");
     } catch (error) {
       console.error("Login error:", error);
-      toast.error("Something went wrong. Please try again.");
+
+      // Handle different types of errors
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        toast.error(
+          "Network error. Please check your internet connection and try again."
+        );
+      } else if (error instanceof Error) {
+        // If it's an error we threw from our response handling, show that message
+        if (error.message.includes("Kindly talk to Support")) {
+          toast.error(error.message);
+        } else {
+          toast.error("Something went wrong. Please try again.");
+        }
+      } else {
+        toast.error("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -284,7 +322,7 @@ export default function SignInPage() {
 
                 <Button
                   type="submit"
-                  className="w-full h-12 bg-gradient-to-r from-orange-500 to-green-500 hover:from-orange-600 hover:to-green-600 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
+                  className="cursor-pointer w-full h-12 bg-gradient-to-r from-orange-500 to-green-500 hover:from-orange-600 hover:to-green-600 text-white font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-[1.02]"
                   disabled={isLoading}
                 >
                   {isLoading ? (

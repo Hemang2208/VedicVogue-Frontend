@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { getAccessToken, refreshAccessToken, clearTokens, hasTokens } from "@/utils/tokenManager";
+import { handleAuthenticationError } from "@/utils/apiErrorHandler";
 
 export default function CaptainAuthGuard({
   children,
@@ -45,8 +46,28 @@ export default function CaptainAuthGuard({
         } else {
           throw new Error('Token invalid');
         }
-      } catch {
+      } catch (error) {
         console.log('Token validation failed, attempting refresh...');
+        
+        // Check if it's an authentication error that we should handle specifically
+        if (axios.isAxiosError(error) && error.response) {
+          // Create a Response-like object for the error handler
+          const mockResponse = {
+            status: error.response.status,
+            ok: false,
+          } as Response;
+          
+          const handled = handleAuthenticationError(
+            mockResponse,
+            error.response.data
+          );
+          
+          if (handled) {
+            setIsAuthenticated(false);
+            setLoading(false);
+            return;
+          }
+        }
         
         // Try to refresh token
         const newToken = await refreshAccessToken();

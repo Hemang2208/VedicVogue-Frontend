@@ -1,6 +1,7 @@
 import { encrypt, decrypt } from '@/utils/crypto';
 import { getAccessToken, getUserData } from '@/utils/tokenManager';
 import { UserPreferences } from '@/redux/slice/user/preferences.slice';
+import { handleAPIError } from '@/utils/apiErrorHandler';
 
 /**
  * Fetch user preferences by user ID
@@ -31,6 +32,10 @@ export const getUserPreferencesAPI = async (userId: string): Promise<UserPrefere
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      
+      // Use the global error handler
+      handleAPIError(response, errorData, 'Failed to fetch user preferences');
+      
       throw new Error(errorData.message || 'Failed to fetch user preferences');
     }
 

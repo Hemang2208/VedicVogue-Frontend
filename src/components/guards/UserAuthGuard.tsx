@@ -9,6 +9,7 @@ import {
   clearTokens,
   hasTokens,
 } from "@/utils/tokenManager";
+import { handleAuthenticationError } from "@/utils/apiErrorHandler";
 
 export default function UserAuthGuard({
   children,
@@ -48,8 +49,28 @@ export default function UserAuthGuard({
         if (res.status === 200 && res.data.valid) {
           setIsAuthenticated(true);
         }
-      } catch {
+      } catch (error) {
         console.log("Token validation failed, attempting refresh...");
+
+        // Check if it's an authentication error that we should handle specifically
+        if (axios.isAxiosError(error) && error.response) {
+          // Create a Response-like object for the error handler
+          const mockResponse = {
+            status: error.response.status,
+            ok: false,
+          } as Response;
+          
+          const handled = handleAuthenticationError(
+            mockResponse,
+            error.response.data
+          );
+          
+          if (handled) {
+            setIsAuthenticated(false);
+            setLoading(false);
+            return;
+          }
+        }
 
         // Try to refresh token
         const newToken = await refreshAccessToken();
