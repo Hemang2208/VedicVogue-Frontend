@@ -1,6 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, AppDispatch } from "@/redux/store";
+import { 
+  fetchSecurityActivity
+} from "@/redux/slice/user/security.slice";
 import { Navigation } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { VVButton } from "@/components/ui/vv-button";
@@ -35,6 +40,7 @@ import {
   Search,
   // Calendar,
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 interface SecurityActivity {
   id: string;
@@ -48,8 +54,9 @@ interface SecurityActivity {
   userAgent?: string;
 }
 
-// Extended security activities data
-const allSecurityActivities: SecurityActivity[] = [
+// Extended security activities data - using Redux instead
+// const allSecurityActivities: SecurityActivity[] = [];
+/*
   {
     id: "1",
     type: "login",
@@ -147,22 +154,26 @@ const allSecurityActivities: SecurityActivity[] = [
     description: "Failed login attempt with incorrect password",
     timestamp: "2 months ago",
     status: "warning",
-    location: "Bangalore, Karnataka",
-    device: "Firefox on Windows",
-    ip: "203.0.113.5",
-  },
-];
+    // location: "Bangalore, Karnataka",
+    // device: "Firefox on Windows", 
+    // ip: "203.0.113.5",
+  // }];
+*/
 
 export default function SecurityActivityPage() {
-  const [activities] = useState(allSecurityActivities);
-  const [filteredActivities, setFilteredActivities] = useState(
-    allSecurityActivities
-  );
+  const dispatch = useDispatch<AppDispatch>();
+  const { activities } = useSelector((state: RootState) => state.userSecurity);
+  
+  const [filteredActivities, setFilteredActivities] = useState<SecurityActivity[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [timeFilter, setTimeFilter] = useState("all");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    dispatch(fetchSecurityActivity({ page: 1 }));
+  }, [dispatch]);
 
   const getActivityIcon = (type: string, status: string) => {
     if (status === "warning") return AlertTriangle;
@@ -297,7 +308,7 @@ export default function SecurityActivityPage() {
   const handleExport = () => {
     // In a real app, this would generate and download a CSV/PDF report
     console.log("Exporting security activity report...");
-    alert("Security activity report will be downloaded shortly.");
+    toast.success("Security activity report will be downloaded shortly.");
   };
 
   return (

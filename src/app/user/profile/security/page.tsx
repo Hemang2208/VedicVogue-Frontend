@@ -1,6 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState, AppDispatch } from "@/redux/store";
+import { 
+  fetchSecuritySettings, 
+  fetchActiveSessions,
+  fetchSecurityActivity 
+} from "@/redux/slice/user/security.slice";
 import { Navigation } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { VVButton } from "@/components/ui/vv-button";
@@ -10,143 +17,64 @@ import {
   VVCardHeader,
   VVCardTitle,
 } from "@/components/ui/vv-card";
-import { VVInput } from "@/components/ui/vv-input";
-import { VVBadge } from "@/components/ui/vv-badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-// import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Save,
   Shield,
   Key,
-  Smartphone,
-  Eye,
-  EyeOff,
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  MapPin,
   Monitor,
-  Trash2,
+  Activity,
+  ChevronRight,
 } from "lucide-react";
 
-const securitySettings = {
-  twoFactorAuth: false,
-  loginNotifications: true,
-  sessionTimeout: true,
-  deviceTracking: true,
-  passwordExpiry: false,
-};
-
-const loginSessions = [
+const securityOptions = [
   {
-    id: "1",
-    device: "Chrome on Windows",
-    location: "Gurgaon, Haryana",
-    lastActive: "2 minutes ago",
-    current: true,
-    ip: "192.168.1.1",
+    title: "Password Management",
+    description: "Update and manage your account password",
+    icon: Key,
+    href: "/user/profile/security/password",
+    color: "text-blue-600",
+    bgColor: "bg-blue-50",
   },
   {
-    id: "2",
-    device: "Safari on iPhone",
-    location: "Delhi, India",
-    lastActive: "2 hours ago",
-    current: false,
-    ip: "192.168.1.2",
+    title: "Security Settings",
+    description: "Configure two-factor auth and security preferences",
+    icon: Shield,
+    href: "/user/profile/security/settings",
+    color: "text-green-600",
+    bgColor: "bg-green-50",
   },
   {
-    id: "3",
-    device: "Chrome on Android",
-    location: "Mumbai, Maharashtra",
-    lastActive: "1 day ago",
-    current: false,
-    ip: "192.168.1.3",
-  },
-];
-
-const securityActivities = [
-  {
-    id: "1",
-    type: "login",
-    description: "Successful login from Chrome on Windows",
-    timestamp: "2 minutes ago",
-    status: "success",
-    location: "Gurgaon, Haryana",
+    title: "Active Sessions",
+    description: "Manage devices logged into your account",
+    icon: Monitor,
+    href: "/user/profile/security/sessions",
+    color: "text-orange-600",
+    bgColor: "bg-orange-50",
   },
   {
-    id: "2",
-    type: "password_change",
-    description: "Password changed successfully",
-    timestamp: "3 days ago",
-    status: "success",
-    location: "Gurgaon, Haryana",
-  },
-  {
-    id: "3",
-    type: "failed_login",
-    description: "Failed login attempt",
-    timestamp: "1 week ago",
-    status: "warning",
-    location: "Unknown location",
+    title: "Security Activity",
+    description: "View recent security-related activities",
+    icon: Activity,
+    href: "/user/profile/security/activity",
+    color: "text-purple-600",
+    bgColor: "bg-purple-50",
   },
 ];
 
 export default function SecurityPage() {
-  const [settings, setSettings] = useState(securitySettings);
-  const [sessions, setSessions] = useState(loginSessions);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
+  const dispatch = useDispatch<AppDispatch>();
+  const { settings, sessions, loading } = useSelector(
+    (state: RootState) => state.userSecurity
+  );
 
-  const handleSettingChange = (key: string, value: boolean) => {
-    setSettings((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  };
-
-  const handlePasswordChange = () => {
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      alert("New passwords don't match!");
-      return;
-    }
-    console.log("Changing password:", passwordData);
-    setPasswordData({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
-  };
-
-  const handleTerminateSession = (sessionId: string) => {
-    setSessions((prev) => prev.filter((session) => session.id !== sessionId));
-  };
-
-  const handleTerminateAllSessions = () => {
-    setSessions((prev) => prev.filter((session) => session.current));
-  };
-
-  const getActivityIcon = (type: string, status: string) => {
-    if (status === "warning") return AlertTriangle;
-    if (type === "login") return Shield;
-    if (type === "password_change") return Key;
-    return CheckCircle;
-  };
-
-  const getActivityColor = (status: string) => {
-    if (status === "warning") return "text-yellow-600";
-    if (status === "success") return "text-green-600";
-    return "text-blue-600";
-  };
+  useEffect(() => {
+    // Load security data when component mounts
+    dispatch(fetchSecuritySettings());
+    dispatch(fetchActiveSessions());
+    dispatch(fetchSecurityActivity({ page: 1, limit: 5 }));
+  }, [dispatch]);
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -175,412 +103,91 @@ export default function SecurityPage() {
             </div>
           </motion.div>
 
-          <Tabs defaultValue="password" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="password">Password</TabsTrigger>
-              <TabsTrigger value="security">Security</TabsTrigger>
-              <TabsTrigger value="sessions">Sessions</TabsTrigger>
-              <TabsTrigger value="activity">Activity</TabsTrigger>
-            </TabsList>
-
-            {/* Password Management */}
-            <TabsContent value="password">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <VVCard>
-                  <VVCardHeader>
-                    <VVCardTitle className="flex items-center gap-2">
-                      <Key className="h-5 w-5" />
-                      Change Password
-                    </VVCardTitle>
-                    <p className="text-muted-foreground">
-                      Update your password to keep your account secure
-                    </p>
-                  </VVCardHeader>
-                  <VVCardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <div className="relative">
-                        <VVInput
-                          label="Current Password"
-                          type={showCurrentPassword ? "text" : "password"}
-                          value={passwordData.currentPassword}
-                          onChange={(e) =>
-                            setPasswordData((prev) => ({
-                              ...prev,
-                              currentPassword: e.target.value,
-                            }))
-                          }
-                          placeholder="Enter current password"
-                          required
-                        />
-                        <button
-                          type="button"
-                          className="absolute right-3 top-9 text-muted-foreground hover:text-foreground"
-                          onClick={() =>
-                            setShowCurrentPassword(!showCurrentPassword)
-                          }
-                        >
-                          {showCurrentPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-
-                      <div className="relative">
-                        <VVInput
-                          label="New Password"
-                          type={showNewPassword ? "text" : "password"}
-                          value={passwordData.newPassword}
-                          onChange={(e) =>
-                            setPasswordData((prev) => ({
-                              ...prev,
-                              newPassword: e.target.value,
-                            }))
-                          }
-                          placeholder="Enter new password"
-                          required
-                        />
-                        <button
-                          type="button"
-                          className="absolute right-3 top-9 text-muted-foreground hover:text-foreground"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                        >
-                          {showNewPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-
-                      <div className="relative">
-                        <VVInput
-                          label="Confirm New Password"
-                          type={showConfirmPassword ? "text" : "password"}
-                          value={passwordData.confirmPassword}
-                          onChange={(e) =>
-                            setPasswordData((prev) => ({
-                              ...prev,
-                              confirmPassword: e.target.value,
-                            }))
-                          }
-                          placeholder="Confirm new password"
-                          required
-                        />
-                        <button
-                          type="button"
-                          className="absolute right-3 top-9 text-muted-foreground hover:text-foreground"
-                          onClick={() =>
-                            setShowConfirmPassword(!showConfirmPassword)
-                          }
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Password Requirements */}
-                    <div className="bg-muted/50 p-4 rounded-lg">
-                      <h4 className="font-medium mb-2">
-                        Password Requirements:
-                      </h4>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        <li>• At least 8 characters long</li>
-                        <li>• Contains uppercase and lowercase letters</li>
-                        <li>• Contains at least one number</li>
-                        <li>• Contains at least one special character</li>
-                      </ul>
-                    </div>
-
-                    <div className="flex justify-end">
-                      <VVButton onClick={handlePasswordChange}>
-                        <Save className="mr-2 h-4 w-4" />
-                        Update Password
-                      </VVButton>
-                    </div>
-                  </VVCardContent>
-                </VVCard>
-              </motion.div>
-            </TabsContent>
-
-            {/* Security Settings */}
-            <TabsContent value="security">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <VVCard>
-                  <VVCardHeader>
-                    <VVCardTitle className="flex items-center gap-2">
-                      <Shield className="h-5 w-5" />
-                      Security Preferences
-                    </VVCardTitle>
-                    <p className="text-muted-foreground">
-                      Configure your account security settings
-                    </p>
-                  </VVCardHeader>
-                  <VVCardContent className="space-y-6">
-                    <div className="space-y-6">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Smartphone className="h-4 w-4" />
-                            <h4 className="font-medium">
-                              Two-Factor Authentication
-                            </h4>
-                            <VVBadge variant="secondary">Recommended</VVBadge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            Add an extra layer of security to your account
-                          </p>
-                        </div>
-                        <Switch
-                          checked={settings.twoFactorAuth}
-                          onCheckedChange={(checked) =>
-                            handleSettingChange("twoFactorAuth", checked)
-                          }
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <h4 className="font-medium">Login Notifications</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Get notified when someone logs into your account
-                          </p>
-                        </div>
-                        <Switch
-                          checked={settings.loginNotifications}
-                          onCheckedChange={(checked) =>
-                            handleSettingChange("loginNotifications", checked)
-                          }
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <h4 className="font-medium">Session Timeout</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Automatically log out after 30 minutes of inactivity
-                          </p>
-                        </div>
-                        <Switch
-                          checked={settings.sessionTimeout}
-                          onCheckedChange={(checked) =>
-                            handleSettingChange("sessionTimeout", checked)
-                          }
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <h4 className="font-medium">Device Tracking</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Track devices that access your account
-                          </p>
-                        </div>
-                        <Switch
-                          checked={settings.deviceTracking}
-                          onCheckedChange={(checked) =>
-                            handleSettingChange("deviceTracking", checked)
-                          }
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                          <h4 className="font-medium">Password Expiry</h4>
-                          <p className="text-sm text-muted-foreground">
-                            Require password change every 90 days
-                          </p>
-                        </div>
-                        <Switch
-                          checked={settings.passwordExpiry}
-                          onCheckedChange={(checked) =>
-                            handleSettingChange("passwordExpiry", checked)
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="pt-6 border-t">
-                      <VVButton>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Security Settings
-                      </VVButton>
-                    </div>
-                  </VVCardContent>
-                </VVCard>
-              </motion.div>
-            </TabsContent>
-
-            {/* Active Sessions */}
-            <TabsContent value="sessions">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <VVCard>
-                  <VVCardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <VVCardTitle className="flex items-center gap-2">
-                          <Monitor className="h-5 w-5" />
-                          Active Sessions
-                        </VVCardTitle>
-                        <p className="text-muted-foreground">
-                          Manage devices that are currently logged into your
-                          account
-                        </p>
-                      </div>
-                      <VVButton
-                        variant="outline"
-                        onClick={handleTerminateAllSessions}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Terminate All Others
-                      </VVButton>
-                    </div>
-                  </VVCardHeader>
-                  <VVCardContent>
-                    <div className="space-y-4">
-                      {sessions.map((session) => (
-                        <div
-                          key={session.id}
-                          className="flex items-center justify-between p-4 border rounded-lg"
-                        >
+          {/* Security Options Grid */}
+          <div className="grid gap-6 md:grid-cols-2">
+            {securityOptions.map((option, index) => {
+              const Icon = option.icon;
+              return (
+                <motion.div
+                  key={option.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                >
+                  <VVCard className="group hover:shadow-lg transition-all duration-200 cursor-pointer">
+                    <Link href={option.href}>
+                      <VVCardHeader>
+                        <div className="flex items-start justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="p-2 bg-muted rounded-lg">
-                              <Monitor className="h-5 w-5" />
+                            <div className={`p-3 rounded-lg ${option.bgColor}`}>
+                              <Icon className={`h-6 w-6 ${option.color}`} />
                             </div>
                             <div>
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-medium">
-                                  {session.device}
-                                </h4>
-                                {session.current && (
-                                  <VVBadge variant="default">Current</VVBadge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {session.location}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {session.lastActive}
-                                </span>
-                              </div>
-                              <p className="text-xs text-muted-foreground">
-                                IP: {session.ip}
+                              <VVCardTitle className="group-hover:text-primary transition-colors">
+                                {option.title}
+                              </VVCardTitle>
+                              <p className="text-muted-foreground text-sm mt-1">
+                                {option.description}
                               </p>
                             </div>
                           </div>
-                          {!session.current && (
-                            <VVButton
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleTerminateSession(session.id)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Terminate
-                            </VVButton>
-                          )}
+                          <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
-                      ))}
-                    </div>
-                  </VVCardContent>
-                </VVCard>
-              </motion.div>
-            </TabsContent>
+                      </VVCardHeader>
+                    </Link>
+                  </VVCard>
+                </motion.div>
+              );
+            })}
+          </div>
 
-            {/* Security Activity */}
-            <TabsContent value="activity">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <VVCard>
-                  <VVCardHeader>
-                    <VVCardTitle className="flex items-center gap-2">
-                      <Shield className="h-5 w-5" />
-                      Security Activity
-                    </VVCardTitle>
-                    <p className="text-muted-foreground">
-                      Recent security-related activities on your account
+          {/* Quick Security Status */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mt-8"
+          >
+            <VVCard>
+              <VVCardHeader>
+                <VVCardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Security Status
+                </VVCardTitle>
+              </VVCardHeader>
+              <VVCardContent>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">✓</div>
+                    <p className="text-sm font-medium">Password Protected</p>
+                    <p className="text-xs text-muted-foreground">
+                      Strong password set
                     </p>
-                  </VVCardHeader>
-                  <VVCardContent>
-                    <div className="space-y-4">
-                      {securityActivities.map((activity) => {
-                        const Icon = getActivityIcon(
-                          activity.type,
-                          activity.status
-                        );
-                        const colorClass = getActivityColor(activity.status);
-
-                        return (
-                          <div
-                            key={activity.id}
-                            className="flex items-start gap-4 p-4 border rounded-lg"
-                          >
-                            <div
-                              className={`p-2 rounded-lg ${colorClass} bg-muted`}
-                            >
-                              <Icon className="h-4 w-4" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-medium">
-                                {activity.description}
-                              </h4>
-                              <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                                <span className="flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {activity.timestamp}
-                                </span>
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {activity.location}
-                                </span>
-                              </div>
-                            </div>
-                            <VVBadge
-                              variant={
-                                activity.status === "warning"
-                                  ? "destructive"
-                                  : "secondary"
-                              }
-                            >
-                              {activity.status === "warning"
-                                ? "Warning"
-                                : "Success"}
-                            </VVBadge>
-                          </div>
-                        );
-                      })}
+                  </div>
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {settings.twoFactorAuth ? "✓" : "!"}
                     </div>
-
-                    <div className="mt-6 text-center">
-                      <VVButton variant="outline" asChild>
-                        <Link href="/user/profile/security/activity">
-                          View All Activity
-                        </Link>
-                      </VVButton>
+                    <p className="text-sm font-medium">
+                      2FA {settings.twoFactorAuth ? "Enabled" : "Disabled"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {settings.twoFactorAuth ? "Account secured" : "Enable for better security"}
+                    </p>
+                  </div>
+                  <div className="text-center p-4 bg-muted/50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {loading.sessions ? "..." : sessions.length}
                     </div>
-                  </VVCardContent>
-                </VVCard>
-              </motion.div>
-            </TabsContent>
-          </Tabs>
+                    <p className="text-sm font-medium">Active Sessions</p>
+                    <p className="text-xs text-muted-foreground">
+                      Across different devices
+                    </p>
+                  </div>
+                </div>
+              </VVCardContent>
+            </VVCard>
+          </motion.div>
         </div>
       </div>
 
