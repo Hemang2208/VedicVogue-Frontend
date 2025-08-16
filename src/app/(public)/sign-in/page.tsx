@@ -47,16 +47,6 @@ export default function SignInPage() {
 
     if (!password) {
       newErrors.password = "Password is required";
-    } else if (password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters long";
-    } else if (!/[A-Z]/.test(password)) {
-      newErrors.password =
-        "Password must include at least one uppercase letter";
-    } else if (!/[0-9]/.test(password)) {
-      newErrors.password = "Password must include at least one number";
-    } else if (!/[@$!%*?&]/.test(password)) {
-      newErrors.password =
-        "Password must include at least one special character";
     }
 
     setErrors(newErrors);

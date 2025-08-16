@@ -108,9 +108,6 @@ export default function SignUpPage() {
       newErrors.password = "Password is required";
     } else if (stepOneData.password.length < 8) {
       newErrors.password = "Password must be at least 8 characters";
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(stepOneData.password)) {
-      newErrors.password =
-        "Password must contain uppercase, lowercase, and number";
     }
 
     if (stepOneData.password !== stepOneData.confirmPassword) {
