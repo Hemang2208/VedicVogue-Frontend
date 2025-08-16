@@ -6,6 +6,12 @@ import { RootState, AppDispatch } from "@/redux/store";
 import { 
   fetchSecurityActivity
 } from "@/redux/slice/user/security.slice";
+import { 
+  isToday, 
+  isThisWeek, 
+  isThisMonth 
+} from "@/utils/dateFormatter";
+import { TimestampDisplay } from "@/components/ui/timestamp-display";
 import { Navigation } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { VVButton } from "@/components/ui/vv-button";
@@ -223,29 +229,46 @@ export default function SecurityActivityPage() {
         filtered = filtered.filter((activity) => activity.type === type);
       }
 
-      // Time filter (simplified - in real app, you'd parse actual dates)
+      // Time filter - now using proper date parsing
       if (time !== "all") {
-        // This is a simplified implementation
-        // In a real app, you'd parse the timestamp and filter by actual dates
-        if (time === "today") {
-          filtered = filtered.filter(
-            (activity) =>
-              activity.timestamp.includes("minutes ago") ||
-              activity.timestamp.includes("hours ago")
-          );
-        } else if (time === "week") {
-          filtered = filtered.filter(
-            (activity) =>
-              activity.timestamp.includes("minutes ago") ||
-              activity.timestamp.includes("hours ago") ||
-              activity.timestamp.includes("days ago") ||
-              activity.timestamp.includes("1 week ago")
-          );
-        } else if (time === "month") {
-          filtered = filtered.filter(
-            (activity) => !activity.timestamp.includes("months ago")
-          );
-        }
+        filtered = filtered.filter((activity) => {
+          // Try to parse the timestamp as ISO date first, then fall back to the existing format
+          const timestamp = activity.timestamp;
+          
+          // Check if it's an ISO date string
+          const isoDateMatch = timestamp.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+          if (isoDateMatch) {
+            // It's an ISO date string, use our date utility functions
+            if (time === "today") {
+              return isToday(timestamp);
+            } else if (time === "week") {
+              return isThisWeek(timestamp);
+            } else if (time === "month") {
+              return isThisMonth(timestamp);
+            }
+          } else {
+            // Fall back to the old string-based filtering for relative times
+            if (time === "today") {
+              return timestamp.includes("minutes ago") ||
+                     timestamp.includes("hours ago") ||
+                     timestamp.includes("hour ago") ||
+                     timestamp.includes("minute ago") ||
+                     timestamp.includes("Just now");
+            } else if (time === "week") {
+              return timestamp.includes("minutes ago") ||
+                     timestamp.includes("hours ago") ||
+                     timestamp.includes("hour ago") ||
+                     timestamp.includes("minute ago") ||
+                     timestamp.includes("days ago") ||
+                     timestamp.includes("day ago") ||
+                     timestamp.includes("Just now") ||
+                     timestamp.includes("1 week ago");
+            } else if (time === "month") {
+              return !timestamp.includes("months ago") && !timestamp.includes("month ago");
+            }
+          }
+          return false;
+        });
       }
 
       setFilteredActivities(filtered);
@@ -486,10 +509,10 @@ export default function SecurityActivityPage() {
                                   {activity.description}
                                 </p>
                                 <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {activity.timestamp}
-                                  </span>
+                                  <TimestampDisplay
+                                    timestamp={activity.timestamp}
+                                    className="flex items-center gap-1"
+                                  />
                                   <span className="flex items-center gap-1">
                                     <MapPin className="h-3 w-3" />
                                     {activity.location}

@@ -2,6 +2,10 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { decrypt, encrypt } from '@/utils/crypto';
 import { getAccessToken } from '@/utils/tokenManager';
 
+// Constants for limits
+const MAX_ACTIVITIES = 20;
+const MAX_SESSIONS = 10;
+
 // Define interfaces
 export interface SecuritySettings {
   twoFactorAuth: boolean;
@@ -296,7 +300,8 @@ const securitySlice = createSlice({
       })
       .addCase(fetchActiveSessions.fulfilled, (state, action) => {
         state.loading.sessions = false;
-        state.sessions = action.payload;
+        // Limit to 10 sessions maximum
+        state.sessions = action.payload.slice(0, MAX_SESSIONS);
       })
       .addCase(fetchActiveSessions.rejected, (state, action) => {
         state.loading.sessions = false;
@@ -329,7 +334,8 @@ const securitySlice = createSlice({
       })
       .addCase(fetchSecurityActivity.fulfilled, (state, action) => {
         state.loading.activities = false;
-        state.activities = action.payload.activities;
+        // Limit to 20 activities maximum
+        state.activities = action.payload.activities.slice(0, MAX_ACTIVITIES);
         state.activityPagination = {
           page: action.payload.page,
           totalPages: action.payload.totalPages,

@@ -9,6 +9,7 @@ import {
   terminateAllSessions,
   SessionData
 } from "@/redux/slice/user/security.slice";
+import { TimestampDisplay } from "@/components/ui/timestamp-display";
 import { Navigation } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { VVButton } from "@/components/ui/vv-button";
@@ -21,7 +22,7 @@ import {
 } from "@/components/ui/vv-card";
 import { Badge } from "@/components/ui/badge";
 import toast from "react-hot-toast";
-import { Smartphone, Monitor, MapPin, Clock, Wifi, ArrowLeft } from "lucide-react";
+import { Smartphone, Monitor, MapPin, Wifi, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -159,8 +160,12 @@ export default function SessionsPage() {
                               <span>{session.location}</span>
                             </div>
                             <div className="flex items-center space-x-1">
-                              <Clock className="h-3 w-3" />
-                              <span>Last active: {session.lastActive}</span>
+                              <TimestampDisplay
+                                timestamp={session.lastActive}
+                                className="flex items-center space-x-1"
+                                showIcon={true}
+                                prefix="Last active: "
+                              />
                             </div>
                             <div className="flex items-center space-x-1">
                               <Wifi className="h-3 w-3" />
